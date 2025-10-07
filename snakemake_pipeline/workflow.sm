@@ -24,7 +24,6 @@ rule run_fastcnv:
 		mem_mb = 32000
 	params:
 		time = "24:00:00"
-		expr_filter = "0.1"
 	script:
 		"scripts/fastcnv.R"
 

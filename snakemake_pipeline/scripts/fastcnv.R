@@ -21,17 +21,6 @@ print("Get input parameters from snakemake")
 input_matrix <- snakemake@input$matrix
 input_annotations <- snakemake@input$annot
 input_ref_groups <- snakemake@input$ref_groups
-input_gene_annotation<-snakemake@input$gene_pos
-
-#Set the threshold for filtering expression dependent on 10X (0.1) vs Smartseq2 (1)
-#Default the 10X threshold
-param_expr_filter<-snakemake@params$expr_filter
-if(is.null(param_expr_filter)){
-  param_expr_filter<-0.1
-}
-param_expr_filter<-as.numeric(param_expr_filter)
-  
-output_file<-snakemake@output$cnv_file
 
 output_file <- snakemake@output$cnv_file
 
@@ -78,6 +67,22 @@ seurat_obj <- fastCNV(seurat_obj,
                       referenceLabel = ref_groups$ref_groups,
                       printPlot = FALSE,
                       savePath = output_dir)
+
+# Extract CNV matrix from the Seurat object
+# fastCNV stores CNV scores in an assay (typically "CNV")
+if("CNV" %in% names(seurat_obj@assays)){
+  cnv_matrix <- GetAssayData(seurat_obj, assay = "CNV", slot = "data")
+
+  # Convert to data.frame with gene names in first column
+  cnv_df <- as.data.frame(as.matrix(cnv_matrix))
+  cnv_df <- cbind(gene = rownames(cnv_df), cnv_df)
+
+  # Save CNV matrix (gene x cell format, matching inferCNV output)
+  write.table(cnv_df, file = output_file,
+              sep = "\t", quote = FALSE, row.names = FALSE)
+} else {
+  stop("CNV assay not found in Seurat object after running fastCNV")
+}
 
 # ------------------------------------------------------------------------------
 print("SessionInfo:")
