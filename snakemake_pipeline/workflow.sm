@@ -5,7 +5,31 @@
 localrules: run_casper_gene_annot, run_casper_smartseq_gene_annot, CONICSmat_import_data, CONICSmat_mouse_import_data, run_casper_mouse_gene_annot
 
 # ------------------------------------------------------------------------------
-# Run inferCNV 
+# Run fastCNV
+# ------------------------------------------------------------------------------
+
+rule run_fastcnv:
+	input:
+		matrix = "data/input_{dataset}/count_matrix.txt",
+		annot = "data/input_{dataset}/sample_annotation.txt",
+		ref_groups = "data/input_{dataset}/ref_groups.txt"
+	output:
+		cnv_file = "results/output_{dataset}/fastcnv/fastcnv_results.txt"
+	log:
+		"logs/fastcnv_{dataset}.log"
+	benchmark:
+		"benchmarks/fastcnv_{dataset}_benchmark.txt"
+	threads: 1
+	resources:
+		mem_mb = 32000
+	params:
+		time = "24:00:00"
+		expr_filter = "0.1"
+	script:
+		"scripts/fastcnv.R"
+
+# ------------------------------------------------------------------------------
+# Run inferCNV
 # ------------------------------------------------------------------------------
 
 rule run_infercnv:
