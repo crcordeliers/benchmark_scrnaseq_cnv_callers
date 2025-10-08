@@ -503,6 +503,83 @@ read_scevan_individual_cells<-function(matrix_path,gene_annot,annot_path,ref_pat
   return(list(scevan_grange,CNA_mtx_relat))
 }
 
+#Read results from fastCNV (normalized expression)
+read_fastcnv<-function(matrix_path,gene_path,annot_path,ref_path,
+                       clones=NULL){
+
+  suppressWarnings(res_fastcnv<-fread(matrix_path))
+
+  #Transform into a numeric matrix
+  gene_names<-res_fastcnv$gene
+  res_fastcnv$gene<-NULL
+  res_fastcnv<-as.matrix(res_fastcnv)
+  rownames(res_fastcnv)<-gene_names
+
+  #Create a grange object from the gene position information
+  gene_pos <- fread(gene_path)
+  colnames(gene_pos)<-c("gene","chr","start","end")
+  gene_pos<-as.data.frame(gene_pos)
+  rownames(gene_pos)<-gene_pos$gene
+
+  #Filter for genes present in fastCNV results
+  common_genes<-intersect(rownames(res_fastcnv),rownames(gene_pos))
+  gene_pos<-gene_pos[common_genes,]
+  res_fastcnv<-res_fastcnv[common_genes,]
+
+  gene_pos_range<-makeGRangesFromDataFrame(gene_pos,keep.extra.columns=TRUE)
+
+  #Remove reference cells
+  annot<-fread(annot_path,header=FALSE)
+  ref_groups<-fread(ref_path)
+  cancer_cells<-annot$V1[!(annot$V2 %in% ref_groups$ref_groups)]
+  res_fastcnv<-res_fastcnv[,colnames(res_fastcnv) %in% cancer_cells]
+
+  #Calculate the pseudobulk combined over all cells unless the clonal structure is given
+  #(then pseudobulk per subclone)
+  if(is.null(clones)){
+    gene_pos_range$fastcnv<-rowMeans(res_fastcnv)
+  } else {
+    rownames(clones)<-clones$cell
+    clones<-clones[colnames(res_fastcnv),]
+    clones$fastcnv<-as.factor(clones$fastcnv)
+    pbulk_clones<-t(apply(res_fastcnv,1,tapply,clones$fastcnv,mean))
+    mcols(gene_pos_range)<-cbind(mcols(gene_pos_range),pbulk_clones)
+  }
+
+  return(list(gene_pos_range,ncol(res_fastcnv)))
+}
+
+#Read results from fastCNV - per cell
+read_fastcnv_individual_cells<-function(matrix_path,gene_path,annot_path,ref_path){
+
+  suppressWarnings(res_fastcnv<-fread(matrix_path))
+
+  #Transform into a numeric matrix
+  gene_names<-res_fastcnv$gene
+  res_fastcnv$gene<-NULL
+  res_fastcnv<-as.matrix(res_fastcnv)
+  rownames(res_fastcnv)<-gene_names
+
+  #Read gene position information
+  gene_pos <- fread(gene_path)
+  colnames(gene_pos)<-c("gene","chr","start","end")
+
+  #Filter for genes present in fastCNV results
+  common_genes<-intersect(rownames(res_fastcnv),gene_pos$gene)
+  gene_pos<-gene_pos[gene_pos$gene %in% common_genes,]
+  res_fastcnv<-res_fastcnv[common_genes,]
+
+  gene_pos_range<-makeGRangesFromDataFrame(gene_pos)
+
+  #Remove reference cells
+  annot<-fread(annot_path,header=FALSE)
+  ref_groups<-fread(ref_path)
+  cancer_cells<-annot$V1[!(annot$V2 %in% ref_groups$ref_groups)]
+  res_fastcnv<-res_fastcnv[,colnames(res_fastcnv) %in% cancer_cells]
+
+  return(list(gene_pos_range,res_fastcnv))
+}
+
 
 #Read results from SCEVAN (CNV predictions (VEGA output))
 read_scevan_vega<-function(file_path){

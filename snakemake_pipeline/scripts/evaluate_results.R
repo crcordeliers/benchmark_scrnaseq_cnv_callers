@@ -37,6 +37,9 @@ input_annot<-snakemake@input$annot
 input_ref_groups<-snakemake@input$ref_groups
 input_wgs<-snakemake@input$genomic_ground_truth
 
+input_fastcnv<-snakemake@input$fastcnv
+input_fastcnv_gene_pos<-snakemake@input$fastcnv_gene_pos
+
 input_infercnv_cnv<-snakemake@input$infercnv_cnv
 input_infercnv_expr<-snakemake@input$infercnv_expr
 input_infercnv_gene_pos<-snakemake@input$infercnv_gene_pos
@@ -112,6 +115,18 @@ if(param_genomic_format == "WGS"){
   stop(paste("Format of the genomic data is unknown!",
              "Need to be WGS, CNVkit or GATK, not",param_genomic_format))
 }
+
+print("Load fastCNV data")
+fastcnv_results<-read_fastcnv(input_fastcnv,input_fastcnv_gene_pos,
+                               input_annot,input_ref_groups)
+
+num_filtered_res<-rbind(num_filtered_res,
+                        data.frame(method="fastCNV",
+                                  annotated_genes=length(fastcnv_results[[1]]),
+                                  annotated_cells=fastcnv_results[[2]]))
+
+combined_range<-combine_range_objects(wgs_results,fastcnv_results[[1]],
+                                      method_colname="fastcnv")
 
 print("Load inferCNV data (pseudobulk CNVs)")
 infercnv_results<-read_infercnv_6state_model(input_infercnv_cnv,

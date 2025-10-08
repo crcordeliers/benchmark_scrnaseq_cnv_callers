@@ -1004,6 +1004,8 @@ rule evaluate_cnv_prediction_wgs:
 		annot = "data/input_{dataset}/sample_annotation.txt",
 		ref_groups = "data/input_{dataset}/ref_groups.txt",
 		genomic_ground_truth = "data/{dataset}_WGS_groundtruth/wgs_results_formated.csv",
+		fastcnv = "results/output_{dataset}/fastcnv/fastcnv_results.txt",
+		fastcnv_gene_pos = "data/annotations/hg38_gencode_v27.txt",
 		infercnv_cnv = "results/output_{dataset}/infercnv/infercnv.20_HMM_predHMMi6.leiden.hmm_mode-subclusters.Pnorm_0.5.repr_intensities.observations.txt",
 		infercnv_expr = "results/output_{dataset}/infercnv/infercnv.observations.txt",
 		infercnv_gene_pos = "data/annotations/hg38_gencode_v27.txt",
